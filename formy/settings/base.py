@@ -28,9 +28,11 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.postgres",
     "rest_framework",
+    "rest_framework.authtoken",
     "drf_spectacular",
     # project
     "core",
+    "accounts",
 ]
 
 MIDDLEWARE = [
@@ -142,6 +144,10 @@ REST_FRAMEWORK = {
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
     "DEFAULT_VERSION": "v1",
     "ALLOWED_VERSIONS": ["v1"],
+    "DEFAULT_THROTTLE_RATES": {
+        # Unauthenticated and credential-guessing by nature.
+        "auth": env("THROTTLE_AUTH", "10/minute"),
+    },
 }
 
 SPECTACULAR_SETTINGS = {
@@ -158,4 +164,10 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "SORT_OPERATIONS": False,
+    "ENUM_NAME_OVERRIDES": {
+        "OrgRoleEnum": "accounts.models.Membership.OrgRole",
+    },
+    "TAGS": [
+        {"name": "auth", "description": "Obtaining and revoking API tokens."},
+    ],
 }
