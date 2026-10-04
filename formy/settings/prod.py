@@ -5,9 +5,29 @@ DEBUG = False
 
 # Required rather than defaulted, so a missing one is a refusal at startup
 # instead of something discovered later: an unset ALLOWED_HOSTS inherits the
-# localhost default and turns every real request into a puzzling 400.
+# localhost default and turns every real request into a puzzling 400, and an
+# unset encryption key surfaces only on the first sensitive answer.
 SECRET_KEY = env("DJANGO_SECRET_KEY", required=True)
 ALLOWED_HOSTS = [h for h in env("DJANGO_ALLOWED_HOSTS", required=True).split(",") if h]
+FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", required=True)
+
+# Invitations go out by email. base.py defaults to the console backend, which
+# would print them to the log and report success -- an owner would believe a
+# batch of 500 invitations had been sent. Required for the same reason as the
+# keys above, and with a timeout so a hung relay cannot pin a worker forever.
+MAILERS = {
+    "default": {
+        "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+        "OPTIONS": {
+            "host": env("EMAIL_HOST", required=True),
+            "port": int(env("EMAIL_PORT", "587")),
+            "username": env("EMAIL_HOST_USER", ""),
+            "password": env("EMAIL_HOST_PASSWORD", ""),
+            "use_tls": True,
+            "timeout": 10,
+        },
+    }
+}
 
 # Django checks the Origin header on session-authenticated writes, and behind
 # a TLS-terminating proxy it cannot infer the public scheme and host.
