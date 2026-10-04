@@ -31,7 +31,7 @@ dev = [
 DJANGO_SETTINGS_MODULE = "formy.settings.test"
 python_files = ["test_*.py"]
 addopts = "--reuse-db -q"
-testpaths = ["accounts", "analytics", "core", "responses", "surveys"]
+testpaths = ["accounts", "analytics", "core", "exports", "responses", "surveys"]
 
 [tool.ruff]
 line-length = 100

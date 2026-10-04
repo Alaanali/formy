@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "surveys",
     "responses",
     "analytics",
+    "exports",
 ]
 
 MIDDLEWARE = [
@@ -145,6 +146,7 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TASK_DEFAULT_QUEUE = "rollups"
 CELERY_TASK_ROUTES = {
     "analytics.tasks.*": {"queue": "rollups"},
+    "exports.tasks.*": {"queue": "exports"},
 }
 
 # Ceiling for one uploaded file. Enforced on Content-Length before the body
@@ -209,6 +211,7 @@ SPECTACULAR_SETTINGS = {
         "SurveyRoleEnum": "surveys.models.SurveyAccess.SurveyRole",
         "SurveyVersionStatusEnum": "surveys.models.SurveyVersion.Status",
         "SubmissionStatusEnum": "responses.models.Submission.Status",
+        "ExportStatusEnum": "exports.models.Export.Status",
     },
     "TAGS": [
         {"name": "auth", "description": "Obtaining and revoking API tokens."},
@@ -218,5 +221,6 @@ SPECTACULAR_SETTINGS = {
         {"name": "public", "description": "Respondent-facing. Anonymous."},
         {"name": "results", "description": "Aggregate analytics."},
         {"name": "responses", "description": "Individual responses."},
+        {"name": "exports", "description": "Bulk extracts."},
     ],
 }
