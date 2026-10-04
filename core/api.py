@@ -9,6 +9,11 @@ from rest_framework.views import exception_handler as drf_exception_handler
 
 def exception_handler(exc, context):
     """Turn domain errors into 400s instead of 500s."""
+    from surveys.document import SchemaValidationError
+
+    if isinstance(exc, SchemaValidationError):
+        return Response({"errors": exc.errors}, status=status.HTTP_400_BAD_REQUEST)
+
     if isinstance(exc, ProtectedError):
         # on_delete=PROTECT: deleting a version with responses would destroy
         # the schema those answers need in order to mean anything.

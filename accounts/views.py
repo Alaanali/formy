@@ -1,12 +1,24 @@
+from functools import cached_property
+
+from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiResponse, extend_schema
-from rest_framework import status
+from rest_framework import generics, status
 from rest_framework.authtoken.models import Token
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from accounts.serializers import TokenRequestSerializer, TokenSerializer
+from accounts.models import Membership, Organization
+from accounts.serializers import (
+    MembershipSerializer,
+    TokenRequestSerializer,
+    TokenSerializer,
+    is_last_owner,
+)
+from core.api import CapabilityScopedMixin
+from surveys.permissions import Perm
 
 
 class ObtainTokenView(APIView):
@@ -63,3 +75,56 @@ class WhoAmIView(APIView):
     )
     def get(self, request):
         return Response({"user_id": str(request.user.pk), "username": request.user.get_username()})
+
+
+@extend_schema(tags=["organizations"])
+class MembershipListCreateView(CapabilityScopedMixin, generics.ListCreateAPIView):
+    """Who belongs to this organization, and in what role."""
+
+    serializer_class = MembershipSerializer
+    read_perm = Perm.MEMBER_MANAGE
+    write_perm = Perm.MEMBER_MANAGE
+
+    @cached_property
+    def organization(self):
+        return get_object_or_404(
+            Organization.objects.filter(memberships__user=self.request.user),
+            pk=self.kwargs["organization_id"],
+        )
+
+    def permission_object(self):
+        return self.organization
+
+    def get_queryset(self):
+        return self.organization.memberships.select_related("user").order_by("created_at")
+
+    def perform_create(self, serializer):
+        serializer.save(organization=self.organization)
+
+
+@extend_schema(tags=["organizations"])
+class MembershipDetailView(CapabilityScopedMixin, generics.RetrieveUpdateDestroyAPIView):
+    """Change or revoke one membership."""
+
+    serializer_class = MembershipSerializer
+    read_perm = Perm.MEMBER_MANAGE
+    write_perm = Perm.MEMBER_MANAGE
+
+    def get_queryset(self):
+        # Scoped to organizations the caller belongs to, so an id from
+        # another tenant is a 404 rather than a 403.
+        return Membership.objects.filter(
+            organization__memberships__user=self.request.user
+        ).select_related("organization", "user")
+
+    def permission_object(self):
+        return self.get_object().organization
+
+    def perform_destroy(self, instance):
+        # Same guard as demotion: the last owner cannot be removed, or the
+        # organization is left with nobody who can grant access.
+        if instance.role == Membership.OrgRole.OWNER and is_last_owner(instance):
+            raise DRFValidationError(
+                {"role": "This is the organization's only owner. Promote another owner first."}
+            )
+        instance.delete()

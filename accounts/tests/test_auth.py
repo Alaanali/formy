@@ -104,3 +104,19 @@ def test_the_login_endpoint_is_rate_limited(api, credentials, monkeypatch):
     ]
 
     assert codes.count(429) == 2
+
+
+def test_the_token_authenticates_subsequent_requests(api, credentials, org, member_factory):
+    from accounts.models import Membership
+
+    Membership.objects.create(user=credentials, organization=org, role=Membership.OrgRole.ADMIN)
+    token = api.post(
+        "/api/v1/auth/token/", {"username": "alice", "password": "correct-horse"}, format="json"
+    ).json()["token"]
+
+    fresh = APIClient()
+    fresh.credentials(HTTP_AUTHORIZATION=f"Token {token}")
+    response = fresh.get("/api/v1/organizations/")
+
+    assert response.status_code == 200
+    assert [o["slug"] for o in response.json()] == ["acme"]

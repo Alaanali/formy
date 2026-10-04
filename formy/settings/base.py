@@ -170,10 +170,17 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "SORT_OPERATIONS": False,
+    # Several models carry a `status` field with different choice sets, which
+    # would otherwise produce machine-named enums like "Status526Enum".
     "ENUM_NAME_OVERRIDES": {
         "OrgRoleEnum": "accounts.models.Membership.OrgRole",
+        "SurveyRoleEnum": "surveys.models.SurveyAccess.SurveyRole",
+        "SurveyVersionStatusEnum": "surveys.models.SurveyVersion.Status",
     },
     "TAGS": [
         {"name": "auth", "description": "Obtaining and revoking API tokens."},
+        {"name": "organizations", "description": "Tenants and membership."},
+        {"name": "surveys", "description": "Survey definition and versions."},
+        {"name": "builder", "description": "Section authoring and publishing."},
     ],
 }
