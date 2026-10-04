@@ -2,6 +2,7 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from accounts.models import Membership, Organization
+from surveys.models import Survey, SurveyAccess, SurveyVersion
 
 User = get_user_model()
 
@@ -37,3 +38,23 @@ def member_factory(db, user_factory):
         return user
 
     return make
+
+
+@pytest.fixture
+def survey(org):
+    return Survey.objects.create(organization=org, name="NPS 2026", slug="nps-2026")
+
+
+@pytest.fixture
+def grant():
+    """Give a user a role on a single survey."""
+
+    def make(user, survey, role=SurveyAccess.SurveyRole.VIEWER):
+        return SurveyAccess.objects.create(user=user, survey=survey, role=role)
+
+    return make
+
+
+@pytest.fixture
+def draft(survey):
+    return SurveyVersion.objects.create_draft(survey)

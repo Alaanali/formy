@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     # project
     "core",
     "accounts",
+    "surveys",
 ]
 
 MIDDLEWARE = [
