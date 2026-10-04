@@ -1,8 +1,13 @@
+import uuid
+
 import pytest
 from django.contrib.auth import get_user_model
 
 from accounts.models import Membership, Organization
-from surveys.models import Survey, SurveyAccess, SurveyVersion
+from surveys.document import FieldType
+from surveys.models import Section, Survey, SurveyAccess, SurveyVersion
+from surveys.publish import publish
+from surveys.tests.factories import choice, eq, field
 
 User = get_user_model()
 
@@ -58,3 +63,74 @@ def grant():
 @pytest.fixture
 def draft(survey):
     return SurveyVersion.objects.create_draft(survey)
+
+
+# --- a survey exercising every feature the response path must handle ---------
+# A conditional field, a cross-section dependency, filtered options, a
+# sensitive field and a conditionally required one. Shared because the
+# response, analytics and audit suites all need the same shape.
+
+COUNTRY = str(uuid.uuid7())
+AGE = str(uuid.uuid7())
+CITY = str(uuid.uuid7())
+NATIONAL_ID = str(uuid.uuid7())
+COMMENTS = str(uuid.uuid7())
+
+
+@pytest.fixture
+def ids():
+    """Field ids as strings: what a client sends and what a schema stores."""
+    return {
+        "country": COUNTRY,
+        "age": AGE,
+        "city": CITY,
+        "national_id": NATIONAL_ID,
+        "comments": COMMENTS,
+    }
+
+
+@pytest.fixture
+def uid(ids):
+    """The same ids as UUIDs: what the parsed document and the evaluator use."""
+    return {name: uuid.UUID(value) for name, value in ids.items()}
+
+
+@pytest.fixture
+def live_survey(draft):
+    Section.objects.create(
+        version=draft,
+        key="about",
+        title="About you",
+        order=1,
+        content={
+            COUNTRY: choice(values=("sa", "eg"), label="Country", required=True),
+            AGE: field(FieldType.NUMBER, label="Age", min=0, max=120),
+            NATIONAL_ID: field(FieldType.TEXT, label="National ID", sensitive=True),
+        },
+    )
+    Section.objects.create(
+        version=draft,
+        key="location",
+        title="Location",
+        order=2,
+        content={
+            CITY: {
+                "type": FieldType.DROPDOWN,
+                "label": "City",
+                # Both fields in this section depend on an answer in the
+                # previous one, so the section as a whole disappears for
+                # anyone who did not pick Saudi Arabia.
+                "visible": eq(COUNTRY, "sa"),
+                # Conditionally required: only for respondents 21 and over.
+                "required": {"any": [{"field": AGE, "op": "gte", "value": 21}]},
+                "options": [
+                    {"value": "riyadh", "label": "Riyadh", "when": eq(COUNTRY, "sa")},
+                    {"value": "cairo", "label": "Cairo", "when": eq(COUNTRY, "eg")},
+                ],
+            },
+            COMMENTS: field(
+                FieldType.TEXTAREA, label="Comments", max_length=50, visible=eq(COUNTRY, "sa")
+            ),
+        },
+    )
+    return publish(draft)

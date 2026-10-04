@@ -9,9 +9,13 @@ from rest_framework.views import exception_handler as drf_exception_handler
 
 def exception_handler(exc, context):
     """Turn domain errors into 400s instead of 500s."""
+    from responses.services import AnswerValidationError
     from surveys.document import SchemaValidationError
 
     if isinstance(exc, SchemaValidationError):
+        return Response({"errors": exc.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    if isinstance(exc, AnswerValidationError):
         return Response({"errors": exc.errors}, status=status.HTTP_400_BAD_REQUEST)
 
     if isinstance(exc, ProtectedError):

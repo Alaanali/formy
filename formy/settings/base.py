@@ -29,11 +29,13 @@ INSTALLED_APPS = [
     "django.contrib.postgres",
     "rest_framework",
     "rest_framework.authtoken",
+    "auditlog",
     "drf_spectacular",
     # project
     "core",
     "accounts",
     "surveys",
+    "responses",
 ]
 
 MIDDLEWARE = [
@@ -43,6 +45,10 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    # Supplies the acting user to signal-driven audit entries. It reads a
+    # thread-local, so background tasks have no actor and must pass one
+    # explicitly.
+    "auditlog.middleware.AuditlogMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -135,6 +141,14 @@ CELERY_TASK_ACKS_LATE = True
 # prefetching several would leave them queued behind a slow one.
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 
+# Ceiling for one uploaded file. Enforced on Content-Length before the body
+# is read, not only after Django has spooled it.
+MAX_UPLOAD_BYTES = int(env("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
+
+# How long an anonymous draft can be resumed. The resume token is a bearer
+# credential, so it must expire.
+RESUME_WINDOW_DAYS = int(env("RESUME_WINDOW_DAYS", "30"))
+
 # --- field-level encryption -------------------------------------------------
 # Never derived from SECRET_KEY: rotating Django's secret would otherwise
 # destroy every encrypted answer. A single key, so there is no rotation
@@ -159,6 +173,12 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         # Unauthenticated and credential-guessing by nature.
         "auth": env("THROTTLE_AUTH", "10/minute"),
+        "submission_start": env("THROTTLE_SUBMISSION_START", "20/hour"),
+        "submission_write": env("THROTTLE_SUBMISSION_WRITE", "240/hour"),
+        # Its own scope: a 10 MB non-idempotent storage write has nothing in
+        # common with a JSON autosave, and sharing a budget let a few
+        # retried uploads starve the autosave the draft depends on.
+        "submission_upload": env("THROTTLE_SUBMISSION_UPLOAD", "30/hour"),
     },
 }
 
@@ -182,11 +202,13 @@ SPECTACULAR_SETTINGS = {
         "OrgRoleEnum": "accounts.models.Membership.OrgRole",
         "SurveyRoleEnum": "surveys.models.SurveyAccess.SurveyRole",
         "SurveyVersionStatusEnum": "surveys.models.SurveyVersion.Status",
+        "SubmissionStatusEnum": "responses.models.Submission.Status",
     },
     "TAGS": [
         {"name": "auth", "description": "Obtaining and revoking API tokens."},
         {"name": "organizations", "description": "Tenants and membership."},
         {"name": "surveys", "description": "Survey definition and versions."},
         {"name": "builder", "description": "Section authoring and publishing."},
+        {"name": "public", "description": "Respondent-facing. Anonymous."},
     ],
 }
