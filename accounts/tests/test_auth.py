@@ -120,3 +120,19 @@ def test_the_token_authenticates_subsequent_requests(api, credentials, org, memb
 
     assert response.status_code == 200
     assert [o["slug"] for o in response.json()] == ["acme"]
+
+
+def test_token_auth_carries_survey_capabilities(api, survey, member_factory, grant):
+    """Authentication and authorisation stay separate: holding a token says
+    who you are, not what you may touch."""
+    from accounts.models import Membership
+    from surveys.models import SurveyAccess
+
+    user = member_factory(survey.organization, Membership.OrgRole.MEMBER)
+    token = Token.objects.create(user=user)
+    api.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+
+    assert api.get(f"/api/v1/surveys/{survey.id}/").status_code == 404
+
+    grant(user, survey, SurveyAccess.SurveyRole.VIEWER)
+    assert api.get(f"/api/v1/surveys/{survey.id}/").status_code == 200
