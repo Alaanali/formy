@@ -10,6 +10,11 @@ staticfiles/
 media/
 *.sqlite3
 
+# Load-test output: machine-specific timings, rewritten on every run, and
+# `make clean` removes them.
+loadtest/report.html
+loadtest/results_*.csv
+
 # celery beat writes its schedule here (a binary shelve): per-machine state.
 celerybeat-schedule
 celerybeat-schedule.*
