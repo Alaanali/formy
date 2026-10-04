@@ -20,6 +20,7 @@ urlpatterns = [
     path("api/v1/", include("surveys.urls")),
     path("api/v1/", include("analytics.urls")),
     path("api/v1/", include("exports.urls")),
+    path("api/v1/", include("invitations.urls")),
     # Respondent-facing. Anonymous, authenticated by resume token.
     path("api/v1/public/", include("responses.urls")),
 ]

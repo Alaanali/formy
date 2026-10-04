@@ -35,3 +35,6 @@ REST_FRAMEWORK = {  # noqa: F405
         "submission_upload": None,
     },
 }
+
+# Mail is captured in memory, never sent.
+MAILERS = {"default": {"BACKEND": "django.core.mail.backends.locmem.EmailBackend"}}

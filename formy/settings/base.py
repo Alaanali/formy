@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "responses",
     "analytics",
     "exports",
+    "invitations",
 ]
 
 MIDDLEWARE = [
@@ -147,6 +148,19 @@ CELERY_TASK_DEFAULT_QUEUE = "rollups"
 CELERY_TASK_ROUTES = {
     "analytics.tasks.*": {"queue": "rollups"},
     "exports.tasks.*": {"queue": "exports"},
+    # I/O bound and bursty: ten thousand sends must not sit behind one CSV,
+    # nor delay the rollups that keep dashboards current.
+    "invitations.tasks.*": {"queue": "mail"},
+    "responses.tasks.*": {"queue": "rollups"},
+}
+
+# --- invitations -------------------------------------------------------------
+INVITATION_WINDOW_DAYS = int(env("INVITATION_WINDOW_DAYS", "30"))
+PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", "http://localhost:5173")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "surveys@example.com")
+# MAILERS rather than EMAIL_BACKEND: the latter is deprecated in Django 7.
+MAILERS = {
+    "default": {"BACKEND": env("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")}
 }
 
 # Ceiling for one uploaded file. Enforced on Content-Length before the body
@@ -222,5 +236,6 @@ SPECTACULAR_SETTINGS = {
         {"name": "results", "description": "Aggregate analytics."},
         {"name": "responses", "description": "Individual responses."},
         {"name": "exports", "description": "Bulk extracts."},
+        {"name": "invitations", "description": "Distributing a survey to an audience."},
     ],
 }
