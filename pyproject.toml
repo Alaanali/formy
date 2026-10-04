@@ -1,0 +1,47 @@
+[project]
+name = "formy"
+version = "0.1.0"
+description = "Advanced dynamic survey platform"
+requires-python = ">=3.14"
+dependencies = [
+    "celery[redis]>=5.6",
+    "cryptography>=46",
+    "django>=6.1,<6.2",
+    "django-auditlog>=3.4",
+    "djangorestframework>=3.18",
+    "drf-spectacular>=0.30",
+    "psycopg[binary]>=3.3",
+    "pydantic>=2.13.5",
+    "python-dotenv>=1.0",
+    "whitenoise>=6.12.0",
+]
+
+[dependency-groups]
+loadtest = ["locust>=2.32"]
+dev = [
+    "pytest>=8.0",
+    "pytest-django>=4.14",
+    "pytest-cov>=6.0",
+    "ruff>=0.9",
+    "model-bakery>=1.20",
+    "honcho>=2.0.0",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "formy.settings.test"
+python_files = ["test_*.py"]
+addopts = "--reuse-db -q"
+testpaths = ["core"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+# Design docs contain illustrative snippets; the formatter must not churn them.
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"*/migrations/*" = ["E501", "I001"]

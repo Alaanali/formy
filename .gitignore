@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+staticfiles/
+media/
+*.sqlite3
+
+# celery beat writes its schedule here (a binary shelve): per-machine state.
+celerybeat-schedule
+celerybeat-schedule.*
+celerybeat.pid
