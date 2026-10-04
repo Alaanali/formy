@@ -135,6 +135,12 @@ CELERY_TASK_ACKS_LATE = True
 # prefetching several would leave them queued behind a slow one.
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 
+# --- field-level encryption -------------------------------------------------
+# Never derived from SECRET_KEY: rotating Django's secret would otherwise
+# destroy every encrypted answer. A single key, so there is no rotation
+# story -- changing it makes existing answers unreadable.
+FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", "")
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         # Token first: a non-browser client has no way to obtain a session,
