@@ -113,7 +113,7 @@ def test_queryset_update_bypasses_the_guard(draft):
     """Documents a known limit: .update() never calls save(), so the model
     guard cannot see it. The frozen schema column is the guarantee that
     matters -- nothing reads Section rows after publish. Full enforcement
-    would need a database trigger (see DESIGN.md)."""
+    would need a database trigger."""
     Section.objects.create(version=draft, key="s1", title="About you")
     draft.status = SurveyVersion.Status.PUBLISHED
     draft.save()

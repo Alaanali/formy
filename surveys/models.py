@@ -156,7 +156,6 @@ class Section(UUIDModel):
     which covers every ORM path but not queryset.update() or raw SQL. Full
     enforcement would need a trigger; the frozen schema column is the
     guarantee that matters, since nothing reads these rows after publish.
-    See DESIGN.md.
     """
 
     version = models.ForeignKey(SurveyVersion, on_delete=models.CASCADE, related_name="sections")
