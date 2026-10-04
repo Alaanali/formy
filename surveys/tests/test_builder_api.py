@@ -361,3 +361,55 @@ def test_the_slug_route_obeys_the_same_scoping_as_the_id_route(
     response = as_user(outsider).get(f"/api/v1/o/{org.slug}/surveys/{survey.slug}/")
 
     assert response.status_code == 404
+
+
+def test_every_capability_scoped_view_enforces_a_capability():
+    """Regression guard. These views were briefly authorizing everything
+    because the mixin left permission_classes at the project default of
+    IsAuthenticated alone -- a view is not safe just because it looks scoped.
+
+    Walks every app, not just surveys: the guard existed for one module while
+    scoped views were being added to others, which is how it would miss the
+    next occurrence of the bug it was written for.
+    """
+    import importlib
+    import inspect
+
+    from core.api import CapabilityScopedMixin, HasCapability
+
+    scoped = []
+    for app in ("accounts", "surveys", "responses", "analytics", "exports", "invitations"):
+        module = importlib.import_module(f"{app}.views")
+        # Concrete views only: the intermediate mixins are abstract and
+        # declare no capabilities of their own.
+        scoped += [
+            obj
+            for _, obj in inspect.getmembers(module, inspect.isclass)
+            if issubclass(obj, CapabilityScopedMixin)
+            and hasattr(obj, "as_view")
+            and obj.__module__ == module.__name__
+        ]
+
+    assert len(scoped) >= 10, f"only found {len(scoped)} scoped views"
+    for view in scoped:
+        assert HasCapability in view.permission_classes, view.__name__
+        assert view.read_perm and view.write_perm, view.__name__
+
+
+# --- constraint violations surface as field errors, not 500s -----------------
+
+
+def test_a_survey_with_responses_cannot_be_deleted(as_user, live_survey, member_factory, ids):
+    """PROTECT is deliberate: deleting the version would destroy the schema
+    those answers need in order to mean anything. The client should be told
+    that plainly rather than getting a 500."""
+    from responses.services import save_answers, start_submission
+
+    submission = start_submission(live_survey)
+    save_answers(submission, {ids["country"]: "eg", ids["age"]: 30}, complete=True)
+
+    admin = member_factory(live_survey.survey.organization, OrgRole.ADMIN)
+    response = as_user(admin).delete(f"/api/v1/surveys/{live_survey.survey_id}/")
+
+    assert response.status_code == 409
+    assert "Archive it instead" in str(response.json())
