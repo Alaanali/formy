@@ -37,3 +37,14 @@ def test_ids_are_uuid7_and_time_ordered(org):
 
     assert first.id.version == 7
     assert first.id < second.id
+
+
+def test_org_roles_do_not_overlap_with_survey_roles():
+    """The two enums must stay disjoint -- that is what removes any need for
+    a precedence rule between an org grant and a survey grant."""
+    from surveys.models import SurveyAccess
+
+    org_roles = set(Membership.OrgRole.values)
+    survey_roles = set(SurveyAccess.SurveyRole.values)
+
+    assert org_roles.isdisjoint(survey_roles)

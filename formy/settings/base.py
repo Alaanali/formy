@@ -48,6 +48,11 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "formy.urls"
 
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "surveys.auth.SurveyPermissionBackend",
+]
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
