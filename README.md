@@ -132,8 +132,10 @@ different bearer format.
 | `GET POST /surveys/{id}/versions/` | creating one derives from the latest published |
 | `GET /versions/{id}/` | assembled schema |
 | `GET POST /versions/{id}/sections/` | builder |
+| `GET PATCH DELETE /sections/{id}/` | one section; refused once the version is published |
 | `POST /versions/{id}/publish/` | validate, order, freeze |
 | `GET /versions/{id}/results/` | aggregate analytics |
+| `GET /surveys/{id}/results/` | the same, for the latest published version |
 | `GET /versions/{id}/submissions/` | individual responses |
 | `GET /submissions/{id}/answers/` | one response, decrypted per capability |
 | `GET POST /versions/{id}/invitations/` | send the survey to a list |
