@@ -68,6 +68,9 @@ dev: ## Run API, worker and frontend together (Ctrl-C stops all three)
 	@# honcho rather than backgrounded jobs: it forwards the interrupt to
 	@# the whole process group, so nothing is left holding port 8000.
 	@test -d frontend/node_modules || $(MAKE) frontend
+	@# Unwrapped deliberately. Putting this behind a shell conditional --
+	@# to swallow an exit code, say -- stops Ctrl-C from reaching honcho,
+	@# which then leaves all three processes running and port 8000 held.
 	uv run honcho start
 
 frontend: ## Install the frontend's dependencies
