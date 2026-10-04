@@ -15,6 +15,12 @@ media/
 loadtest/report.html
 loadtest/results_*.csv
 
+# Frontend. The lockfile is committed; everything generated is not.
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+
 # celery beat writes its schedule here (a binary shelve): per-machine state.
 celerybeat-schedule
 celerybeat-schedule.*

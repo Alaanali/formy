@@ -6,7 +6,7 @@
 
 .DEFAULT_GOAL := help
 .PHONY: help install up down reset bootstrap flush migrate migrations seed \
-        run run-load worker beat \
+        run run-load worker beat dev frontend \
         test test-fast cov lint fmt check e2e load load-headless perf \
         schema shell dbshell logs clean
 
@@ -63,6 +63,15 @@ flush: ## Delete all data, keeping the schema
 
 run: ## Run the development server (PORT=8000)
 	uv run python manage.py runserver $(PORT) --settings=$(SETTINGS)
+
+dev: ## Run API, worker and frontend together (Ctrl-C stops all three)
+	@# honcho rather than backgrounded jobs: it forwards the interrupt to
+	@# the whole process group, so nothing is left holding port 8000.
+	@test -d frontend/node_modules || $(MAKE) frontend
+	uv run honcho start
+
+frontend: ## Install the frontend's dependencies
+	pnpm --dir frontend install
 
 run-load: ## Run the server with throttles raised, for load testing
 	@# A load test comes from a single address, so the per-IP rate limits

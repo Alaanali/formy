@@ -24,7 +24,7 @@ dev = [
     "pytest-cov>=6.0",
     "ruff>=0.9",
     "model-bakery>=1.20",
-    "honcho>=2.0.0",
+    "honcho==2.0.0",
 ]
 
 [tool.pytest.ini_options]

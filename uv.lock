@@ -615,7 +615,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "honcho", specifier = ">=2.0.0" },
+    { name = "honcho", specifier = "==2.0.0" },
     { name = "model-bakery", specifier = ">=1.20" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-cov", specifier = ">=6.0" },
