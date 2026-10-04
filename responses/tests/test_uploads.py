@@ -393,3 +393,48 @@ def test_a_file_from_another_tenant_is_404(submission, staff_clients, other_org,
 
 
 # --- encryption ---------------------------------------------------------------
+
+
+def test_an_analyst_can_download_an_upload(submission, staff_clients):
+    record = store_upload(submission, CV, pdf())
+
+    response = staff_clients["analyst"].get(f"/api/v1/files/{record.id}/download/")
+
+    assert response.status_code == 200
+    assert b"%PDF" in b"".join(response.streaming_content)
+
+
+def test_the_file_is_always_an_attachment_with_a_neutral_type(submission, staff_clients):
+    """The stored content type is client-declared, so echoing it would turn
+    an HTML file uploaded as image/png into stored XSS on this origin."""
+    record = store_upload(submission, CV, pdf())
+
+    response = staff_clients["analyst"].get(f"/api/v1/files/{record.id}/download/")
+
+    assert response["Content-Type"] == "application/octet-stream"
+    assert "attachment" in response["Content-Disposition"]
+    assert response["X-Content-Type-Options"] == "nosniff"
+
+
+def test_a_viewer_cannot_download(submission, staff_clients):
+    """A filename alone routinely identifies the respondent, so this needs
+    the PII capability rather than merely the right to read responses."""
+    record = store_upload(submission, CV, pdf())
+
+    assert staff_clients["viewer"].get(f"/api/v1/files/{record.id}/download/").status_code == 403
+    assert staff_clients["editor"].get(f"/api/v1/files/{record.id}/download/").status_code == 403
+
+
+def test_downloading_is_audited(submission, staff_clients):
+    from auditlog.models import LogEntry
+
+    record = store_upload(submission, CV, pdf())
+    staff_clients["analyst"].get(f"/api/v1/files/{record.id}/download/")
+
+    entries = [
+        e
+        for e in LogEntry.objects.filter(action=LogEntry.Action.ACCESS)
+        if (e.additional_data or {}).get("file_id") == str(record.id)
+    ]
+    assert entries
+    assert entries[0].additional_data["filename"] == "cv.pdf"

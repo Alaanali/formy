@@ -11,6 +11,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils import timezone
 
+from analytics.services import record_completion, record_start
 from core.audit import Action, log_access
 from core.crypto import decrypt, encrypt
 from responses.models import Answer, Submission, SubmissionFile
@@ -303,6 +304,7 @@ def _finalise(
     submission.save(update_fields=["status", "submitted_at", "resume_token"])
 
     # Inline for now; moving it to a task changes only this call.
+    record_completion(submission, visible, _analytics_view(document, merged, visible))
 
 
 def _delete_uploads(submission: Submission, field_ids: list[UUID]) -> None:
@@ -406,4 +408,5 @@ def start_submission(version: SurveyVersion, *, meta: dict | None = None) -> Sub
         resume_expires_at=timezone.now() + timedelta(days=settings.RESUME_WINDOW_DAYS),
         meta=meta or {},
     )
+    record_start(submission)
     return submission

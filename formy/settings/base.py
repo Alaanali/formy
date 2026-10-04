@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "accounts",
     "surveys",
     "responses",
+    "analytics",
 ]
 
 MIDDLEWARE = [
@@ -141,6 +142,11 @@ CELERY_TASK_ACKS_LATE = True
 # prefetching several would leave them queued behind a slow one.
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 
+CELERY_TASK_DEFAULT_QUEUE = "rollups"
+CELERY_TASK_ROUTES = {
+    "analytics.tasks.*": {"queue": "rollups"},
+}
+
 # Ceiling for one uploaded file. Enforced on Content-Length before the body
 # is read, not only after Django has spooled it.
 MAX_UPLOAD_BYTES = int(env("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
@@ -210,5 +216,7 @@ SPECTACULAR_SETTINGS = {
         {"name": "surveys", "description": "Survey definition and versions."},
         {"name": "builder", "description": "Section authoring and publishing."},
         {"name": "public", "description": "Respondent-facing. Anonymous."},
+        {"name": "results", "description": "Aggregate analytics."},
+        {"name": "responses", "description": "Individual responses."},
     ],
 }
